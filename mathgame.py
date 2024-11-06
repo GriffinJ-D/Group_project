@@ -12,6 +12,8 @@ screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Math Game')
 
+
+
 # Define colors
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
@@ -33,11 +35,73 @@ equations = {
     "(4 * 2)": 8,
     "6 / 2": 3,
     "(10 - 7)": 3,
-    "(3 + 6)": 9
+    "(3 + 6)": 9,
+    "(1 - 4)": -3,
+    "(6 - 9)": -3,
+    "(3 * 0)": -0,
+    "(3 - 8)": -5
 }
 
 
-# Define Cube and Gate classes (omitted here for brevity - same as your original code)
+# Global variable for difficulty setting
+difficulty = "Medium"  # Default difficulty
+
+# Settings menu options
+settings_options = ["Difficulty", "Audio", "Visual", "Back"]
+
+# Difficulty options and gate speed dictionary
+difficulty_options = ["Easy", "Medium", "Hard"]
+gate_speeds = {"Easy": 1, "Medium": 2, "Hard": 4}
+# Difficulty setting submenu
+def difficulty_menu():
+    global difficulty  # Declare 'difficulty' as global at the start of the function
+    selected_difficulty = difficulty_options.index(difficulty)
+
+    while True:
+        screen.fill(WHITE)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_difficulty = (selected_difficulty - 1) % len(difficulty_options)
+                elif event.key == pygame.K_DOWN:
+                    selected_difficulty = (selected_difficulty + 1) % len(difficulty_options)
+                elif event.key == pygame.K_RETURN:
+                    difficulty = difficulty_options[selected_difficulty]
+                    return  # Go back to settings menu on selection
+                elif event.key == pygame.K_ESCAPE:
+                    return  # Return to settings menu
+
+        # Display difficulty options
+        for i, option in enumerate(difficulty_options):
+            color = BLUE if i == selected_difficulty else BLACK
+            option_text = font.render(option, True, color)
+            screen.blit(option_text, (screen_width // 2 - option_text.get_width() // 2, screen_height // 2 + i * 50))
+
+        pygame.display.flip()
+        pygame.time.Clock().tick(60)
+
+# Function to display individual setting options
+def setting_submenu(option_name):
+    screen.fill(WHITE)
+    option_text = font.render(f"{option_name} Settings", True, BLACK)
+    option_text_rect = option_text.get_rect(center=(screen_width // 2, screen_height // 2 - 50))
+    screen.blit(option_text, option_text_rect)
+    pygame.display.flip()
+
+    # Wait until the user presses ESC to go back
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return  # Return to the settings menu on ESC
+
 
 # Placeholder functions for high scores and settings
 def high_scores():
@@ -45,9 +109,40 @@ def high_scores():
     pass
 
 
-def settings():
-    # Display settings menu here, can be implemented further
-    pass
+# Settings menu function
+def settings_menu():
+    selected_setting = 0  # Track selected setting
+    while True:
+        screen.fill(WHITE)
+
+        # Event handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_setting = (selected_setting - 1) % len(settings_options)
+                elif event.key == pygame.K_DOWN:
+                    selected_setting = (selected_setting + 1) % len(settings_options)
+                elif event.key == pygame.K_RETURN:
+                    if selected_setting == 0:  # Difficulty
+                        difficulty_menu()
+                    elif selected_setting == 1:  # Audio
+                        setting_submenu("Audio")
+                    elif selected_setting == 2:  # Visual
+                        setting_submenu("Visual")
+                    elif selected_setting == 3:  # Back
+                        return  # Return to main menu
+
+        # Display settings options
+        for i, option in enumerate(settings_options):
+            color = BLUE if i == selected_setting else BLACK
+            option_text = font.render(option, True, color)
+            screen.blit(option_text, (screen_width // 2 - option_text.get_width() // 2, screen_height // 2 + i * 50))
+
+        pygame.display.flip()
+        pygame.time.Clock().tick(60)
 
 
 # Start Menu function
@@ -76,7 +171,7 @@ def menu_loop():
                     elif selected_option == 1:
                         high_scores()  # Display high scores
                     elif selected_option == 2:
-                        settings()  # Go to settings
+                        settings_menu()  # Go to settings
 
         # Display menu options
         for i, option in enumerate(options):
@@ -177,8 +272,9 @@ def end_game_screen(score):
 def game_loop():
     clock = pygame.time.Clock()
     cube = Cube(100, screen_height - 100, 100, 5)
-    red_gate = Gate(screen_width - screen_width // 2, screen_width // 2, 40, 2, RED)
-    green_gate = Gate(0, screen_width // 2, 40, 2, GREEN)
+
+    red_gate = Gate(screen_width - screen_width // 2, screen_width // 2, 40, gate_speeds[difficulty], RED)
+    green_gate = Gate(0, screen_width // 2, 40, gate_speeds[difficulty], GREEN)
 
     # Set the starting time and countdown duration
     countdown = 15  # Start at 15 seconds
