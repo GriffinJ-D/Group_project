@@ -103,10 +103,84 @@ def setting_submenu(option_name):
                     return  # Return to the settings menu on ESC
 
 
-# Placeholder functions for high scores and settings
+# Preset high scores (3-letter initials and a score)
+high_scores_list = [
+    ("GJD", 23),
+    ("ADC", 22),
+    ("MLK", 20),
+    ("JFK", 16),
+    ("BUT", 12)
+]
 def high_scores():
-    # Display high scores here, can be implemented further
-    pass
+    selected_option = 0  # Only one option: "Back"
+    while True:
+        screen.fill(WHITE)
+
+        # Display high scores
+        title_text = font.render("High Scores", True, BLACK)
+        screen.blit(title_text, (screen_width // 2 - title_text.get_width() // 2, screen_height // 4))
+
+        # Display each high score
+        for i, (initials, score) in enumerate(high_scores_list):
+            score_text = font.render(f"{initials}: {score}", True, BLACK)
+            screen.blit(score_text, (screen_width // 2 - score_text.get_width() // 2, screen_height // 2 - 100 + i * 40))
+
+        # Display "Back" option
+        color = BLUE if selected_option == 0 else BLACK
+        back_text = font.render("Back", True, color)
+        screen.blit(back_text, (screen_width // 2 - back_text.get_width() // 2, screen_height - 100))
+
+        pygame.display.flip()
+
+        # Event handling for back option
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:  # Press Enter to select "Back"
+                    menu_loop()
+                elif event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+                    selected_option = (selected_option + 1) % 1  # Toggle back option (single option)
+
+        pygame.time.Clock().tick(60)
+
+
+# Function to prompt for initials and insert into high scores
+def enter_initials_and_save_score(new_score):
+    initials = ""
+    while True:
+        screen.fill(WHITE)
+
+        # Display prompt for entering initials
+        prompt_text = font.render("Enter Your Initials:", True, BLACK)
+        screen.blit(prompt_text, (screen_width // 2 - prompt_text.get_width() // 2, screen_height // 3))
+
+        # Display the current initials entered
+        initials_text = font.render(initials, True, BLACK)
+        screen.blit(initials_text, (screen_width // 2 - initials_text.get_width() // 2, screen_height // 2))
+
+        pygame.display.flip()
+
+        # Handle events for entering initials
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN and len(initials) == 3:
+                    # Insert the new high score in the sorted list
+                    high_scores_list.append((initials, new_score))
+                    high_scores_list.sort(key=lambda x: x[1], reverse=True)
+                    del high_scores_list[5:]  # Keep only top 5 scores
+                    return
+                elif event.key == pygame.K_BACKSPACE:
+                    initials = initials[:-1]  # Remove the last character
+                elif len(initials) < 3 and event.unicode.isalpha():
+                    initials += event.unicode.upper()  # Add new letter and convert to uppercase
+
+# End game screen and check if score qualifies for high scores
+
 
 
 # Settings menu function
@@ -169,7 +243,7 @@ def menu_loop():
                     if selected_option == 0:
                         game_loop()  # Start the game
                     elif selected_option == 1:
-                        high_scores()  # Display high scores
+                        high_scores()  # Display high scores and return to this menu after "Back" is selected
                     elif selected_option == 2:
                         settings_menu()  # Go to settings
 
@@ -251,6 +325,13 @@ class Gate:
 # End game screen to show the final score
 
 def end_game_screen(score):
+    # Check if score qualifies for high scores only once
+    new_high_score = False
+    if score > min(high_scores_list, key=lambda x: x[1])[1]:  # Score qualifies if higher than the lowest high score
+        enter_initials_and_save_score(score)
+        new_high_score = True  # Mark that a new high score was entered
+
+    # Display "Game Over" and final score
     screen.fill(WHITE)
     end_text = font.render("Game Over", True, BLACK)
     score_text = font.render(f"Final Score: {score}", True, BLACK)
@@ -264,9 +345,10 @@ def end_game_screen(score):
     screen.blit(score_text, score_text_rect)
 
     pygame.display.flip()
-    pygame.time.delay(3000)  # Display for 3 seconds before exiting
-    pygame.quit()
-    sys.exit()
+    pygame.time.delay(3000)  # Display "Game Over" message for 3 seconds
+
+    # Automatically show the high scores list after "Game Over" message
+    high_scores()
 
 # Main game loop
 def game_loop():
