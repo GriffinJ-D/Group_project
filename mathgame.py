@@ -13,6 +13,13 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Math Game')
 
 
+# Initialize Pygame Mixer
+pygame.mixer.init()
+
+# Load the music file
+pygame.mixer.music.load("Kirby_-_Gourmet_Race_Remix_[_YTBMP3.org_].mp3")  # Replace with your file's path
+
+
 
 # Define colors
 WHITE = (255, 255, 255)
@@ -58,7 +65,8 @@ def difficulty_menu():
     selected_difficulty = difficulty_options.index(difficulty)
 
     while True:
-        screen.fill(WHITE)
+        screen.fill(BLACK if is_dark_mode else WHITE)
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -84,37 +92,66 @@ def difficulty_menu():
         pygame.display.flip()
         pygame.time.Clock().tick(60)
 
-# Function to display individual setting options
-def setting_submenu(option_name):
-    screen.fill(WHITE)
-    option_text = font.render(f"{option_name} Settings", True, BLACK)
-    option_text_rect = option_text.get_rect(center=(screen_width // 2, screen_height // 2 - 50))
-    screen.blit(option_text, option_text_rect)
-    pygame.display.flip()
+# Track the current theme
+is_dark_mode = False  # Global variable to track if Dark Mode is enabled
 
-    # Wait until the user presses ESC to go back
+# Function to display individual setting options with Dark Mode toggle
+def setting_submenu(option_name):
+    global is_dark_mode, screen, screen_width, screen_height  # Declare globals to modify screen properties
+    selected_option = 0
+    options = ["Dark Mode", "Screen Size", "Back"]  # Add "Screen Size" to the options
+
     while True:
+        # Set background and text colors based on Dark Mode
+        background_color = BLACK if is_dark_mode else WHITE
+        text_color = WHITE if is_dark_mode else BLACK
+
+        screen.fill(background_color)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return  # Return to the settings menu on ESC
+                if event.key == pygame.K_UP:
+                    selected_option = (selected_option - 1) % len(options)
+                elif event.key == pygame.K_DOWN:
+                    selected_option = (selected_option + 1) % len(options)
+                elif event.key == pygame.K_RETURN:
+                    if selected_option == 0:  # Toggle Dark Mode
+                        is_dark_mode = not is_dark_mode
+                    elif selected_option == 1:  # Adjust Screen Size
+                        # Increase screen size
+                        screen_width += 200
+                        screen_height += 150
+                        screen = pygame.display.set_mode((screen_width, screen_height))
+                    elif selected_option == 2:  # Back
+                        return  # Exit to the settings menu
+
+        # Display options
+        for i, option in enumerate(options):
+            color = BLUE if i == selected_option else text_color
+            option_text = font.render(option, True, color)
+            screen.blit(option_text, (screen_width // 2 - option_text.get_width() // 2, screen_height // 2 + i * 50))
+
+        pygame.display.flip()
+        pygame.time.Clock().tick(60)
+
 
 
 # Preset high scores (3-letter initials and a score)
 high_scores_list = [
-    ("GJD", 23),
-    ("ADC", 22),
+    ("LBJ", 23),
+    ("SGA", 22),
     ("MLK", 20),
     ("JFK", 16),
-    ("BUT", 12)
+    ("PJD", 12)
 ]
 def high_scores():
     selected_option = 0  # Only one option: "Back"
     while True:
-        screen.fill(WHITE)
+        screen.fill(BLACK if is_dark_mode else WHITE)
+
 
         # Display high scores
         title_text = font.render("High Scores", True, BLACK)
@@ -150,7 +187,8 @@ def high_scores():
 def enter_initials_and_save_score(new_score):
     initials = ""
     while True:
-        screen.fill(WHITE)
+        screen.fill(BLACK if is_dark_mode else WHITE)
+
 
         # Display prompt for entering initials
         prompt_text = font.render("Enter Your Initials:", True, BLACK)
@@ -187,7 +225,8 @@ def enter_initials_and_save_score(new_score):
 def settings_menu():
     selected_setting = 0  # Track selected setting
     while True:
-        screen.fill(WHITE)
+        screen.fill(BLACK if is_dark_mode else WHITE)
+
 
         # Event handling
         for event in pygame.event.get():
@@ -226,7 +265,8 @@ def menu_loop():
     options = ["Start Game", "High Scores", "Settings"]
 
     while True:
-        screen.fill(WHITE)
+        screen.fill(BLACK if is_dark_mode else WHITE)
+
         keys = pygame.key.get_pressed()
 
         # Event handling
@@ -332,9 +372,9 @@ def end_game_screen(score):
         new_high_score = True  # Mark that a new high score was entered
 
     # Display "Game Over" and final score
-    screen.fill(WHITE)
-    end_text = font.render("Game Over", True, BLACK)
-    score_text = font.render(f"Final Score: {score}", True, BLACK)
+    screen.fill(BLACK if is_dark_mode else WHITE)
+    end_text = font.render("Game Over", True, WHITE if is_dark_mode else BLACK)
+    score_text = font.render(f"Final Score: {score}", True, WHITE if is_dark_mode else BLACK)
 
     # Center the text on the screen
     end_text_rect = end_text.get_rect(center=(screen_width // 2, screen_height // 2 - 50))
@@ -350,6 +390,8 @@ def end_game_screen(score):
     # Automatically show the high scores list after "Game Over" message
     high_scores()
 
+
+
 # Main game loop
 def game_loop():
     clock = pygame.time.Clock()
@@ -362,13 +404,17 @@ def game_loop():
     countdown = 15  # Start at 15 seconds
     start_ticks = pygame.time.get_ticks()  # Get initial time
 
+    # Play background music
+    pygame.mixer.music.play(-1)  # Loop music indefinitely
+
     while True:
-        screen.fill(WHITE)
+        screen.fill(BLACK if is_dark_mode else WHITE)
         keys = pygame.key.get_pressed()
 
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.mixer.music.stop()  # Stop music on quit
                 pygame.quit()
                 sys.exit()
 
@@ -377,12 +423,13 @@ def game_loop():
         time_left = countdown - seconds_passed
 
         # Display the countdown timer at the top center of the screen
-        timer_text = font.render(f"Time: {time_left}", True, BLACK)
+        timer_text = font.render(f"Time: {time_left}", True, BLACK if not is_dark_mode else WHITE)
         timer_text_rect = timer_text.get_rect(center=(screen_width // 2, 20))
         screen.blit(timer_text, timer_text_rect)
 
         # Check if time has run out
         if time_left <= 0:
+            pygame.mixer.music.stop()  # Stop music when the game ends
             end_game_screen(cube.value)  # Display end game screen with final score
 
         # Move and draw the cube
@@ -408,6 +455,7 @@ def game_loop():
 
         pygame.display.flip()
         clock.tick(60)
+
 
 # Run the game
 if __name__ == "__main__":
